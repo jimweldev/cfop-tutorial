@@ -24,6 +24,9 @@ jobs:
       - uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # signs the update bundles; tauri-action then uploads latest.json for the updater
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
         with:
           tagName: ${{ github.ref_name }}
           releaseName: CFOP Tutorial ${{ github.ref_name }}
@@ -54,10 +57,18 @@ jobs:
         with:
           workspaces: src-tauri
       - run: npm ci
+      - name: Write Android signing config
+        env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          cd src-tauri/gen/android
+          echo "$ANDROID_KEYSTORE_BASE64" | base64 -d > "$RUNNER_TEMP/upload.jks"
+          printf 'password=%s\nkeyAlias=upload\nstoreFile=%s\n' "$ANDROID_KEY_PASSWORD" "$RUNNER_TEMP/upload.jks" > keystore.properties
       - name: Build APK
         run: |
           export NDK_HOME="$ANDROID_HOME/ndk/28.2.13676358"
-          npm run tauri android build -- --debug --apk --target aarch64
+          npm run tauri android build -- --apk --target aarch64
       - name: Rename APK
         run: |
           apk=$(find src-tauri/gen/android/app/build/outputs/apk -name '*.apk' | head -1)
