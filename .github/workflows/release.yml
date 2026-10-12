@@ -73,7 +73,7 @@ jobs:
         run: |
           apk=$(find src-tauri/gen/android/app/build/outputs/apk -name '*.apk' | head -1)
           cp "$apk" "cfop-tutorial-${{ github.ref_name }}.apk"
-      - uses: softprops/action-gh-release@v2
+      - uses: softprops/action-gh-release@v3
         with:
           tag_name: ${{ github.ref_name }}
           files: cfop-tutorial-${{ github.ref_name }}.apk
